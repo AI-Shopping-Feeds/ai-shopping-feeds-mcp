@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
 import { Client } from '@modelcontextprotocol/client';
+import type { Progress } from '@modelcontextprotocol/client';
 import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 
 import { startFakeUpstream, VALID_KEY, type FakeUpstream } from './fakeUpstream.js';
@@ -50,7 +51,7 @@ describe('command line', () => {
   it.each([
     ['2025-era', {}],
     ['2026-07-28', { versionNegotiation: { mode: 'auto' as const } }]
-  ])('serves MCP over stdio end to end to a %s client', async (_era, options) => {
+  ])('serves MCP over stdio end to end to a %s client, relaying progress', async (_era, options) => {
     const transport = new StdioClientTransport({ command: process.execPath, args: [bin, '--read-only'], env: env(), stderr: 'pipe' });
     const client = new Client({ name: 'cli-test', version: '0.0.0' }, options);
     await client.connect(transport);
@@ -61,15 +62,24 @@ describe('command line', () => {
     expect(JSON.stringify(result.content)).toContain('docs.search');
     await client.close();
 
+    // feeds_refresh is a write tool, so it needs a server without --read-only.
+    const writer = new Client({ name: 'cli-test', version: '0.0.0' }, options);
+    await writer.connect(new StdioClientTransport({ command: process.execPath, args: [bin], env: env(), stderr: 'pipe' }));
+    const updates: Progress[] = [];
+    await writer.callTool({ name: 'feeds_refresh', arguments: {} }, { onprogress: (update) => updates.push(update) });
+    expect(updates.map((update) => update.progress)).toEqual([1, 2, 3]);
+    await writer.close();
   }, 30_000);
 
   it('writes nothing but JSON-RPC to stdout, and logs to stderr', async () => {
     const { lines, stderr } = await rawSession(upstream.url, [
       ['tools/list', {}],
-      ['tools/call', { name: 'docs_search', arguments: { query: 'gtin' } }]
+      ['tools/call', { name: 'feeds_refresh', arguments: {}, _meta: { progressToken: 'p' } }]
     ]);
-    expect(lines).toHaveLength(3);
+    expect(lines.length).toBe(6); // three responses and three progress notifications
     for (const line of lines) expect(JSON.parse(line)).toMatchObject({ jsonrpc: '2.0' });
+    expect(lines.filter((line) => line.includes('notifications/progress'))).toHaveLength(3);
+    expect(lines.findIndex((line) => line.includes('"id":3'))).toBe(5); // the result comes after its progress
     expect(stderr).toMatch(/ready \(127\.0\.0\.1:\d+\)/);
   }, 30_000);
 });

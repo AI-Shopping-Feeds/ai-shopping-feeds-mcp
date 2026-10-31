@@ -1,5 +1,7 @@
+import { AsyncLocalStorage } from 'node:async_hooks';
+
 import { Client, SdkHttpError, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
-import type { CallToolResult, Tool } from '@modelcontextprotocol/client';
+import type { CallToolResult, ProgressCallback, Tool } from '@modelcontextprotocol/client';
 
 import type { Config } from './config.js';
 import { PACKAGE_NAME, PACKAGE_VERSION } from './version.js';
@@ -31,9 +33,41 @@ export function describeUpstreamError(error: unknown): string {
   return message;
 }
 
+export interface CallToolOptions {
+  /** Called for each progress notification the hosted server sends for this call. */
+  onprogress?: ProgressCallback;
+  /** Aborting it cancels the call on the hosted server. */
+  signal?: AbortSignal;
+}
+
 export interface ListToolsOptions {
   /** Skip a cached tool list the hosted server said was still fresh. */
   refresh?: boolean;
+}
+
+/** Combines two abort signals (AbortSignal.any needs Node 20.3). */
+function eitherSignal(a: AbortSignal, b: AbortSignal): AbortSignal {
+  const controller = new AbortController();
+  const abort = (signal: AbortSignal) => () => controller.abort(signal.reason);
+  for (const signal of [a, b]) {
+    if (signal.aborted) {
+      controller.abort(signal.reason);
+      break;
+    }
+    signal.addEventListener('abort', abort(signal), { once: true, signal: controller.signal });
+  }
+  return controller.signal;
+}
+
+/** True for a POST body that is a JSON-RPC request (not a notification or response). */
+function isRequestBody(init: RequestInit | undefined): boolean {
+  if (init?.method !== 'POST' || typeof init.body !== 'string') return false;
+  try {
+    const message = JSON.parse(init.body) as { id?: unknown; method?: unknown };
+    return message.id !== undefined && typeof message.method === 'string';
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -44,14 +78,32 @@ export interface ListToolsOptions {
 export class Upstream {
   private client: Client | null = null;
   private connecting: Promise<Client> | null = null;
+  /** The cancellation signal of the tool call being sent, if any. */
+  private readonly callSignal = new AsyncLocalStorage<AbortSignal>();
+
   constructor(
     private readonly config: Config,
     private readonly fetchImpl: typeof fetch = fetch
   ) {}
 
+  /**
+   * On a 2025-era connection the client cancels with a notifications/cancelled
+   * message, which a stateless server (a fresh instance per HTTP request)
+   * cannot match to the running call. Aborting the call's own HTTP request as
+   * well closes its response stream, which such a server does notice. On a
+   * 2026-07-28 connection closing the stream is how the client cancels anyway.
+   */
+  private readonly fetchWithCancel: typeof fetch = (input, init) => {
+    const signal = this.callSignal.getStore();
+    if (signal && isRequestBody(init)) {
+      init = { ...init, signal: init?.signal ? eitherSignal(init.signal, signal) : signal };
+    }
+    return this.fetchImpl(input, init);
+  };
+
   private async connect(): Promise<Client> {
     const transport = new StreamableHTTPClientTransport(this.config.apiUrl, {
-      fetch: this.fetchImpl,
+      fetch: this.fetchWithCancel,
       requestInit: {
         headers: {
           Authorization: `Bearer ${this.config.apiKey}`,
@@ -90,12 +142,12 @@ export class Upstream {
   }
 
   /** Runs a request, reconnecting once if the server no longer knows the session. */
-  private async withClient<T>(run: (client: Client) => Promise<T>): Promise<T> {
+  private async withClient<T>(run: (client: Client) => Promise<T>, signal?: AbortSignal): Promise<T> {
     const client = await this.getClient();
     try {
       return await run(client);
     } catch (error) {
-      if (error instanceof SdkHttpError && error.status === 404) {
+      if (error instanceof SdkHttpError && error.status === 404 && !signal?.aborted) {
         await this.reset();
         return run(await this.getClient());
       }
@@ -114,10 +166,24 @@ export class Upstream {
     });
   }
 
-  async callTool(name: string, args: Record<string, unknown> | undefined): Promise<CallToolResult> {
-    return this.withClient((client) =>
-      client.callTool({ name, arguments: args ?? {} }, { timeout: this.config.timeoutMs, resetTimeoutOnProgress: true })
-    );
+  async callTool(
+    name: string,
+    args: Record<string, unknown> | undefined,
+    options: CallToolOptions = {}
+  ): Promise<CallToolResult> {
+    const { onprogress, signal } = options;
+    const send = (client: Client) =>
+      client.callTool(
+        { name, arguments: args ?? {} },
+        {
+          timeout: this.config.timeoutMs,
+          resetTimeoutOnProgress: true,
+          ...(onprogress ? { onprogress } : {}),
+          ...(signal ? { signal } : {})
+        }
+      );
+    // Only the call itself runs with the signal, not a (re)connect it waits for.
+    return this.withClient((client) => (signal ? this.callSignal.run(signal, () => send(client)) : send(client)), signal);
   }
 
   async reset(): Promise<void> {

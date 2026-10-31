@@ -1,7 +1,7 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { Client } from '@modelcontextprotocol/client';
-import type { CallToolResult } from '@modelcontextprotocol/client';
+import type { CallToolResult, Progress } from '@modelcontextprotocol/client';
 import { InMemoryTransport } from '@modelcontextprotocol/server';
 import { serveStdio } from '@modelcontextprotocol/server/stdio';
 
@@ -142,6 +142,57 @@ describe.each(matrix)('proxy to a %s hosted server, for a %s client', (upstreamM
     expect(result.isError).toBe(true);
     expect(text(result)).toMatch(/confirm must be true/);
     await close();
+  });
+
+  it('relays progress under the client\'s token, always moving forward', async () => {
+    const { client, close } = await open();
+    const updates: Progress[] = [];
+    const result = await client.callTool(
+      { name: 'feeds_refresh', arguments: { feed_id: 'f1' } },
+      { onprogress: (update) => updates.push(update) }
+    );
+    expect(result.isError).toBeFalsy();
+    // The hosted server got a token of its own and reported 1, 2, 2, 3.
+    expect(JSON.parse(text(result)).progressToken).toBeDefined();
+    expect(updates).toEqual([
+      { progress: 1, total: 3, message: 'Step 1' },
+      { progress: 2, total: 3, message: 'Step 2' },
+      { progress: 3, total: 3, message: 'Step 3' }
+    ]);
+    await close();
+  });
+
+  it('asks the hosted server for no progress when the client did not', async () => {
+    const { client, close } = await open();
+    const result = await client.callTool({ name: 'feeds_refresh', arguments: { feed_id: 'f1' } });
+    expect(JSON.parse(text(result)).progressToken).toBeUndefined();
+    await close();
+  });
+
+  it('cancels the hosted call when the client cancels', async () => {
+    const { client, close } = await open();
+    await client.listTools();
+    const controller = new AbortController();
+    const started = upstream.waitForCall('exports.run');
+    const call = client.callTool({ name: 'exports_run', arguments: {} }, { signal: controller.signal });
+    await started;
+    const cancelledBefore = upstream.cancelled.length;
+    controller.abort('the person clicked Stop');
+    await expect(call).rejects.toThrow(/clicked Stop/);
+    await vi.waitFor(() => expect(upstream.cancelled.length).toBe(cancelledBefore + 1), { timeout: 5_000 });
+    await close();
+  });
+
+  it('cancels the hosted call when the client disconnects', async () => {
+    const { client, close } = await open();
+    await client.listTools();
+    const started = upstream.waitForCall('exports.run');
+    const call = client.callTool({ name: 'exports_run', arguments: {} }).catch(() => undefined);
+    await started;
+    const cancelledBefore = upstream.cancelled.length;
+    await close();
+    await call;
+    await vi.waitFor(() => expect(upstream.cancelled.length).toBe(cancelledBefore + 1), { timeout: 5_000 });
   });
 
   it('hides write tools in read-only mode and refuses to call them', async () => {
