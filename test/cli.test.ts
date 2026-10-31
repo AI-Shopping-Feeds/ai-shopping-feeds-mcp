@@ -1,10 +1,11 @@
-import { execFileSync, spawnSync } from 'node:child_process';
+import { execFileSync, spawn, spawnSync } from 'node:child_process';
+import { createInterface } from 'node:readline';
 import { fileURLToPath } from 'node:url';
 
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+import { Client } from '@modelcontextprotocol/client';
+import { StdioClientTransport } from '@modelcontextprotocol/client/stdio';
 
 import { startFakeUpstream, VALID_KEY, type FakeUpstream } from './fakeUpstream.js';
 
@@ -20,6 +21,10 @@ beforeAll(async () => {
 afterAll(async () => {
   await upstream?.close();
 });
+
+function env(): Record<string, string> {
+  return { PATH: process.env.PATH ?? '', AI_SHOPPING_FEEDS_API_KEY: VALID_KEY, AI_SHOPPING_FEEDS_API_URL: upstream.url.href };
+}
 
 function run(args: string[], env: Record<string, string> = {}) {
   return spawnSync(process.execPath, [bin, ...args], {
@@ -42,20 +47,71 @@ describe('command line', () => {
     expect(result.stdout).toBe('');
   });
 
-  it('serves MCP over stdio end to end', async () => {
-    const transport = new StdioClientTransport({
-      command: process.execPath,
-      args: [bin, '--read-only'],
-      env: { PATH: process.env.PATH ?? '', AI_SHOPPING_FEEDS_API_KEY: VALID_KEY, AI_SHOPPING_FEEDS_API_URL: upstream.url.href },
-      stderr: 'pipe'
-    });
-    const client = new Client({ name: 'cli-test', version: '0.0.0' });
+  it.each([
+    ['2025-era', {}],
+    ['2026-07-28', { versionNegotiation: { mode: 'auto' as const } }]
+  ])('serves MCP over stdio end to end to a %s client', async (_era, options) => {
+    const transport = new StdioClientTransport({ command: process.execPath, args: [bin, '--read-only'], env: env(), stderr: 'pipe' });
+    const client = new Client({ name: 'cli-test', version: '0.0.0' }, options);
     await client.connect(transport);
     expect(client.getServerVersion()?.name).toBe('ai-shopping-feeds');
     const { tools } = await client.listTools();
-    expect(tools.map((tool) => tool.name)).toEqual(['feeds_list', 'docs_search']);
+    expect(tools.map((tool) => tool.name)).toEqual(['feeds_list', 'docs_search', 'exports_run']);
     const result = await client.callTool({ name: 'docs_search', arguments: { query: 'merchant center' } });
     expect(JSON.stringify(result.content)).toContain('docs.search');
     await client.close();
+
+  }, 30_000);
+
+  it('writes nothing but JSON-RPC to stdout, and logs to stderr', async () => {
+    const { lines, stderr } = await rawSession(upstream.url, [
+      ['tools/list', {}],
+      ['tools/call', { name: 'docs_search', arguments: { query: 'gtin' } }]
+    ]);
+    expect(lines).toHaveLength(3);
+    for (const line of lines) expect(JSON.parse(line)).toMatchObject({ jsonrpc: '2.0' });
+    expect(stderr).toMatch(/ready \(127\.0\.0\.1:\d+\)/);
   }, 30_000);
 });
+
+/**
+ * Talks to dist/index.js over raw stdio: initialize, then each request in
+ * turn (ids from 2), then closes stdin and waits for the process to exit.
+ * Every stdout line must parse as JSON.
+ */
+async function rawSession(url: URL, requests: [string, object][]) {
+  const child = spawn(process.execPath, [bin], {
+    env: { ...env(), AI_SHOPPING_FEEDS_API_URL: url.href },
+    stdio: ['pipe', 'pipe', 'pipe']
+  });
+  let stderr = '';
+  child.stderr.on('data', (chunk) => (stderr += chunk));
+  const lines: string[] = [];
+  const responses = new Map<number, unknown>();
+  const waiting = new Map<number, () => void>();
+  createInterface({ input: child.stdout }).on('line', (line) => {
+    lines.push(line);
+    const message = JSON.parse(line) as { id?: number };
+    if (typeof message.id === 'number') {
+      responses.set(message.id, message);
+      waiting.get(message.id)?.();
+    }
+  });
+  const send = (message: object) => child.stdin.write(`${JSON.stringify(message)}\n`);
+  const request = (id: number, method: string, params: object) =>
+    new Promise<void>((resolve) => {
+      waiting.set(id, resolve);
+      send({ jsonrpc: '2.0', id, method, params });
+    });
+
+  await request(1, 'initialize', {
+    protocolVersion: '2025-11-25',
+    capabilities: {},
+    clientInfo: { name: 'raw', version: '0.0.0' }
+  });
+  send({ jsonrpc: '2.0', method: 'notifications/initialized' });
+  for (const [index, [method, params]] of requests.entries()) await request(index + 2, method, params);
+  child.stdin.end();
+  await new Promise((resolve) => child.on('exit', resolve));
+  return { lines, responses, stderr };
+}

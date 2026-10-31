@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import { serveStdio } from '@modelcontextprotocol/server/stdio';
 
 import { ConfigError, DEFAULT_API_URL, loadConfig } from './config.js';
 import { createServer } from './server.js';
@@ -35,8 +35,16 @@ async function main(): Promise<void> {
   }
 
   const config = loadConfig(process.env, argv);
-  const server = createServer(config);
-  await server.connect(new StdioServerTransport());
+  // serveStdio answers both 2025-era clients (initialize) and 2026-07-28
+  // clients (server/discover) from the same factory.
+  const handle = serveStdio(() => createServer(config), {
+    onerror: (error) => console.error(`${PACKAGE_NAME}: ${error.message}`)
+  });
+  for (const signal of ['SIGINT', 'SIGTERM'] as const) {
+    process.once(signal, () => {
+      void handle.close().finally(() => process.exit(0));
+    });
+  }
   // stdout carries the protocol, so status goes to stderr.
   console.error(`${PACKAGE_NAME} ${PACKAGE_VERSION} ready (${config.apiUrl.host}${config.readOnly ? ', read-only' : ''})`);
 }

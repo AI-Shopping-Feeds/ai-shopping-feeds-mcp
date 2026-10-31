@@ -1,10 +1,5 @@
-import { Server } from '@modelcontextprotocol/sdk/server/index.js';
-import {
-  CallToolRequestSchema,
-  ListToolsRequestSchema,
-  type CallToolResult,
-  type Tool
-} from '@modelcontextprotocol/sdk/types.js';
+import { Server } from '@modelcontextprotocol/server';
+import type { CallToolResult, Tool } from '@modelcontextprotocol/server';
 
 import type { Config } from './config.js';
 import { describeUpstreamError, Upstream } from './upstream.js';
@@ -48,24 +43,25 @@ export function createServer(config: Config, upstream: Upstream = new Upstream(c
   // Local name -> hosted name, for the tools this server exposes.
   let exposed = new Map<string, string>();
 
-  async function refreshTools(): Promise<Tool[]> {
-    const tools = (await upstream.listTools()).filter((tool) => isExposed(tool, config));
+  async function refreshTools(refresh = false): Promise<Tool[]> {
+    const tools = (await upstream.listTools({ refresh })).filter((tool) => isExposed(tool, config));
     exposed = new Map(tools.map((tool) => [toLocalName(tool.name), tool.name]));
     return tools.map((tool) => ({ ...tool, name: toLocalName(tool.name) }));
   }
 
-  server.setRequestHandler(ListToolsRequestSchema, async () => {
+  server.setRequestHandler('tools/list', async () => {
     try {
       return { tools: await refreshTools() };
     } catch (error) {
+      // Thrown errors reach the client as they are, so only throw the sanitised message.
       throw new Error(describeUpstreamError(error));
     }
   });
 
-  server.setRequestHandler(CallToolRequestSchema, async (request) => {
+  server.setRequestHandler('tools/call', async (request) => {
     const localName = request.params.name;
     try {
-      if (!exposed.has(localName)) await refreshTools();
+      if (!exposed.has(localName)) await refreshTools(true);
       const upstreamName = exposed.get(localName);
       if (!upstreamName) {
         const reason = config.readOnly || config.toolGroups.length > 0
