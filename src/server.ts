@@ -87,6 +87,9 @@ function relayProgress(ctx: ServerContext): ProgressRelay | undefined {
   };
 }
 
+// The SDK marks the low-level Server as for advanced use. This is one: it
+// forwards whatever tools the hosted server lists at runtime, which
+// McpServer's register-each-tool-up-front API can't express.
 export function createServer(config: Config, upstream: Upstream = new Upstream(config)): Server {
   const server = new Server(
     { name: 'ai-shopping-feeds', version: PACKAGE_VERSION },

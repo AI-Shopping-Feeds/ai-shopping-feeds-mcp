@@ -254,3 +254,7 @@ to the AI Shopping Feeds API rather than to this package, so they reach every cl
 
 [Apache License 2.0](LICENSE). "AI Shopping Feeds" is a trademark of its owner; the licence does
 not grant rights to use it.
+
+---
+
+Try out [AI Shopping Feeds](https://aishoppingfeeds.com/), our shopping feed management tool (including Google Shopping feeds).
