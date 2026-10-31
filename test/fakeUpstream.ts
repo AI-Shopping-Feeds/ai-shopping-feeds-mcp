@@ -71,6 +71,8 @@ export interface FakeUpstreamOptions {
   mode?: FakeUpstreamMode;
   /** Tools per tools/list page. */
   pageSize?: number;
+  /** Set to false to leave the tools capability out, as a misconfigured server might. */
+  toolsCapability?: boolean;
 }
 
 export interface FakeUpstream {
@@ -94,6 +96,7 @@ export interface FakeUpstream {
 export async function startFakeUpstream(options: FakeUpstreamOptions = {}): Promise<FakeUpstream> {
   const mode = options.mode ?? 'modern';
   const pageSize = options.pageSize ?? 4;
+  const capabilities = options.toolsCapability === false ? {} : { tools: {} };
   const requests: IncomingHttpHeaders[] = [];
   const calls: { name: string; arguments: unknown }[] = [];
   const eras: string[] = [];
@@ -112,7 +115,8 @@ export async function startFakeUpstream(options: FakeUpstreamOptions = {}): Prom
 
   function buildServer(era: string): Server {
     eras.push(era);
-    const server = new Server({ name: 'fake-upstream', version: '0.0.0' }, { capabilities: { tools: {} } });
+    const server = new Server({ name: 'fake-upstream', version: '0.0.0' }, { capabilities });
+    if (!('tools' in capabilities)) return server;
 
     server.setRequestHandler('tools/list', async (request) => {
       const cursor = request.params?.cursor ?? '';

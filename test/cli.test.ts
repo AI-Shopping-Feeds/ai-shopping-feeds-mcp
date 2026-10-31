@@ -82,6 +82,18 @@ describe('command line', () => {
     expect(lines.findIndex((line) => line.includes('"id":3'))).toBe(5); // the result comes after its progress
     expect(stderr).toMatch(/ready \(127\.0\.0\.1:\d+\)/);
   }, 30_000);
+
+  it('keeps stdout clean when the SDK logs, such as for a server without the tools capability', async () => {
+    const bare = await startFakeUpstream({ toolsCapability: false });
+    try {
+      const { lines, responses } = await rawSession(bare.url, [['tools/list', {}]]);
+      expect(lines).toHaveLength(2);
+      for (const line of lines) expect(JSON.parse(line)).toMatchObject({ jsonrpc: '2.0' });
+      expect(responses.get(2)).toMatchObject({ result: { tools: [] } });
+    } finally {
+      await bare.close();
+    }
+  }, 30_000);
 });
 
 /**

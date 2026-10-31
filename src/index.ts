@@ -35,6 +35,9 @@ async function main(): Promise<void> {
   }
 
   const config = loadConfig(process.env, argv);
+  // stdout carries the protocol. Send any console output from dependencies
+  // (in Node, console.log, info and debug write to stdout) to stderr instead.
+  console.log = console.info = console.debug = console.error;
   // serveStdio answers both 2025-era clients (initialize) and 2026-07-28
   // clients (server/discover) from the same factory.
   const handle = serveStdio(() => createServer(config), {
