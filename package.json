@@ -1,0 +1,56 @@
+{
+  "name": "@ai-shopping-feeds/mcp",
+  "version": "0.1.0",
+  "description": "MCP server for AI Shopping Feeds: manage product feeds, rules, AI optimisation, channels and product ad creatives from Claude, Cursor and other MCP clients.",
+  "license": "Apache-2.0",
+  "author": "AI Shopping Feeds",
+  "homepage": "https://github.com/AI-Shopping-Feeds/ai-shopping-feeds-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AI-Shopping-Feeds/ai-shopping-feeds-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/AI-Shopping-Feeds/ai-shopping-feeds-mcp/issues"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "ai-shopping-feeds",
+    "product-feeds",
+    "google-merchant-center",
+    "shopping-ads",
+    "ecommerce"
+  ],
+  "type": "module",
+  "bin": {
+    "ai-shopping-feeds-mcp": "dist/index.js"
+  },
+  "main": "dist/server.js",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepublishOnly": "npm run typecheck && npm test && npm run build",
+    "tools:update": "node scripts/update-tools.mjs"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.7"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
