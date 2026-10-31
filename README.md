@@ -197,6 +197,15 @@ The hosted server names its tools with dots, such as `feeds.list`, which is also
 docs refer to them. Some clients and model APIs only accept letters, digits, `_` and `-` in tool
 names, so this package shows them with underscores (`feeds_list`) and translates them back.
 
+### Progress and cancelling
+
+When your client asks for progress on a tool call, the server passes on any progress the hosted
+server reports. If you stop a tool call in your client, or close the client, the server asks the
+hosted server to cancel the call too.
+
+The server works with clients on both the 2025 and the 2026-07-28 versions of the MCP
+protocol, and talks to the hosted server in whichever version it supports.
+
 ## Troubleshooting
 
 - **"AI_SHOPPING_FEEDS_API_KEY is not set"**: add the key to the `env` block of your client config,
@@ -245,3 +254,7 @@ to the AI Shopping Feeds API rather than to this package, so they reach every cl
 
 [Apache License 2.0](LICENSE). "AI Shopping Feeds" is a trademark of its owner; the licence does
 not grant rights to use it.
+
+---
+
+Try out [AI Shopping Feeds](https://aishoppingfeeds.com/), our shopping feed management tool (including Google Shopping feeds).

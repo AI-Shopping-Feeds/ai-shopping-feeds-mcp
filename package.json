@@ -1,6 +1,6 @@
 {
   "name": "@ai-shopping-feeds/mcp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "MCP server for AI Shopping Feeds: manage product feeds, rules, AI optimisation, channels and product ad creatives from Claude, Cursor and other MCP clients.",
   "license": "Apache-2.0",
   "author": "AI Shopping Feeds",
@@ -43,9 +43,11 @@
     "tools:update": "node scripts/update-tools.mjs"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.2"
+    "@modelcontextprotocol/client": "^2.4.0",
+    "@modelcontextprotocol/server": "^2.4.0"
   },
   "devDependencies": {
+    "@modelcontextprotocol/node": "^2.1.2",
     "@types/node": "^22.20.5",
     "typescript": "^5.9.3",
     "vitest": "^3.2.7"

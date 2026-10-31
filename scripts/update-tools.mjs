@@ -7,8 +7,7 @@
 // Use a key with every scope, or the list only shows the tools that key can call.
 import { readFileSync, writeFileSync } from 'node:fs';
 
-import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 
 const GROUPS = {
   feeds: 'Feeds',
@@ -30,17 +29,12 @@ async function fetchTools() {
   const apiKey = process.env.AI_SHOPPING_FEEDS_API_KEY;
   if (!apiKey) throw new Error('Set AI_SHOPPING_FEEDS_API_KEY or pass --from <file>.');
   const url = new URL(process.env.AI_SHOPPING_FEEDS_API_URL || 'https://app.aishoppingfeeds.com/api/v1/mcp');
-  const client = new Client({ name: 'tools-doc', version: '0.0.0' });
+  const client = new Client({ name: 'tools-doc', version: '0.0.0' }, { versionNegotiation: { mode: 'auto' } });
   await client.connect(new StreamableHTTPClientTransport(url, {
     requestInit: { headers: { Authorization: `Bearer ${apiKey}` } }
   }));
-  const tools = [];
-  let cursor;
-  do {
-    const page = await client.listTools(cursor ? { cursor } : {});
-    tools.push(...page.tools);
-    cursor = page.nextCursor;
-  } while (cursor);
+  // With no cursor, listTools follows nextCursor and returns every page.
+  const { tools } = await client.listTools();
   await client.close();
   return tools;
 }
