@@ -1,0 +1,32 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "ai-shopping-feeds",
+  "version": "0.2.0",
+  "description": "Manage ecommerce product feeds in AI Shopping Feeds: import a store or feed, audit and fix products, write rules, optimise titles and descriptions, and publish to Google Merchant Center and Meta.",
+  "author": { "name": "AI Shopping Feeds", "url": "https://aishoppingfeeds.com" },
+  "license": "Apache-2.0",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "AI Shopping Feeds",
+        "shortDescription": "Manage shopping product feeds",
+        "longDescription": "Connect your AI Shopping Feeds workspace to work on your product feeds in conversation. Import a store or feed, audit products for missing or weak data, write rules that fix patterns across a catalogue, improve titles and descriptions, classify products, and publish to Google Merchant Center and Meta catalogues. You sign in with your AI Shopping Feeds account and choose the workspace and brands to share. Changes to your data are confirmed before they run.",
+        "developerName": "AI Shopping Feeds",
+        "category": "Business",
+        "capabilities": [],
+        "websiteURL": "https://aishoppingfeeds.com",
+        "supportURL": "https://aishoppingfeeds.com/contact",
+        "privacyPolicyURL": "https://aishoppingfeeds.com/privacy",
+        "termsOfServiceURL": "https://aishoppingfeeds.com/terms",
+        "defaultPrompt": [
+          "Audit my main product feed and list the biggest problems",
+          "Which products are missing a GTIN or brand?",
+          "Write a rule that adds the brand to the start of my titles"
+        ],
+        "brandColor": "#4F8262",
+        "composerIcon": "./assets/logo.png",
+        "logo": "./assets/logo.png"
+      }
+    }
+  }
+}

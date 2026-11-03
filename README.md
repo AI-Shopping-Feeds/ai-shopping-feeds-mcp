@@ -250,6 +250,9 @@ vulnerability.
 Issues and pull requests are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). New tools are added
 to the AI Shopping Feeds API rather than to this package, so they reach every client at once.
 
+Listing in the Claude and ChatGPT directories is covered in
+[docs/directory-submission.md](docs/directory-submission.md).
+
 ## Licence
 
 [Apache License 2.0](LICENSE). "AI Shopping Feeds" is a trademark of its owner; the licence does

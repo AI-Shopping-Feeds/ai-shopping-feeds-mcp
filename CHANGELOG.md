@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Added a `plugin/` folder for the Claude and ChatGPT directories: it connects the hosted server
+  with OAuth and includes a skill. `npm run plugin:zip` builds the ChatGPT upload.
+
 ## 0.2.0
 
 - Moved from `@modelcontextprotocol/sdk` 1.x, which only gets fixes until early 2027, to the
