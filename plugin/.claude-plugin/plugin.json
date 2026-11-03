@@ -7,6 +7,7 @@
     "name": "AI Shopping Feeds",
     "url": "https://aishoppingfeeds.com"
   },
+  "icon": "./assets/logo.png",
   "homepage": "https://aishoppingfeeds.com",
   "repository": "https://github.com/AI-Shopping-Feeds/ai-shopping-feeds-mcp",
   "license": "Apache-2.0",
