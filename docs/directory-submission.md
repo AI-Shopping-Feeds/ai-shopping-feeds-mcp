@@ -15,24 +15,28 @@ between the two companies.
 
 ## Before you submit
 
-The hosted server needs these changes first. They live in `ai-shopping-feeds-backend`.
+The hosted server needed changes for both directories. They are in `ai-shopping-feeds-backend`
+([#457](https://github.com/pavegrowth/ai-shopping-feeds-backend/pull/457)), and must be deployed before you submit:
 
 | Change | Needed by |
 |---|---|
 | A `title` on every tool | Claude (flagged in the portal), OpenAI |
 | Explicit `readOnlyHint`, `destructiveHint` and `openWorldHint` on every tool | OpenAI (all three), Claude (the first two) |
-| A UserInfo endpoint returning `email` and `email_verified: true`, with `openid` and `email` scopes advertised | OpenAI |
-| Serve the portal's token as plain text at `/.well-known/openai-apps-challenge` | OpenAI |
-| `account.plans` and `account.billing_link` hidden from directory connections | OpenAI (no plans, upgrades or checkout links) |
-| A decision on `creatives.remove_background` | Claude (no AI image generation) |
+| A UserInfo endpoint returning `email` and `email_verified`, with `openid` and `email` scopes advertised | OpenAI |
+| The portal's token served as plain text at `/.well-known/openai-apps-challenge`, from `OPENAI_APPS_CHALLENGE_TOKEN` | OpenAI |
+| `account.plans` and `account.billing_link` hidden from OAuth connections | OpenAI (no plans, upgrades or checkout links) |
+| `creatives.remove_background` hidden from OAuth connections, and `creatives.publish` refusing designs that use it | Claude (no AI image generation) |
+
+After deploying, an OAuth connection lists 100 tools rather than 103.
 
 ## What only you can do
 
 - **OpenAI:** complete business verification, and have **Apps Management Write** on the organization.
 - **Claude:** submit from a paid plan, and connect GitHub to claude.ai in that organization.
-- **Test account:** a dedicated, fully populated workspace with sample brands, feeds and products
-  that signs in without MFA, emailed codes or magic links. Enter its details only in each portal,
-  never in this repository or the ZIP.
+- **Reviewer access:** sign-in has no passwords, only an emailed code or Google, so a test login
+  isn't simple to hand over. The Claude connector gives reviewers self-registration steps instead,
+  in the portal's **Test & launch** step. A reviewer may still ask for a populated account.
+  ChatGPT's review form asks for credentials, so settle this before submitting there.
 - **Run every tool yourself** through MCP Inspector or as a custom connector. Claude's portal asks
   you to confirm this.
 - **Record a demo video** at a link reviewers can open (`review.demo_recording_url`).
