@@ -1,0 +1,17 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json",
+  "mcpServers": {
+    "ai-shopping-feeds": {
+      "type": "streamable-http",
+      "url": "https://app.aishoppingfeeds.com/api/v1/mcp",
+      "extensions": {
+        "com.openai": {
+          "auth": {
+            "type": "oauth",
+            "client": { "mode": "dcr" }
+          }
+        }
+      }
+    }
+  }
+}

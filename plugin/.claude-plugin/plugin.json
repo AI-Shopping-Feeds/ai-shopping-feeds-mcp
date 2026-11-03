@@ -1,0 +1,14 @@
+{
+  "name": "ai-shopping-feeds",
+  "displayName": "AI Shopping Feeds",
+  "version": "0.2.0",
+  "description": "Manage ecommerce product feeds in AI Shopping Feeds: import a store or feed, audit and fix products, write rules, optimise titles and descriptions, and publish to Google Merchant Center and Meta.",
+  "author": {
+    "name": "AI Shopping Feeds",
+    "url": "https://aishoppingfeeds.com"
+  },
+  "homepage": "https://aishoppingfeeds.com",
+  "repository": "https://github.com/AI-Shopping-Feeds/ai-shopping-feeds-mcp",
+  "license": "Apache-2.0",
+  "keywords": ["product-feeds", "google-merchant-center", "shopping-ads", "meta-catalogue", "ecommerce"]
+}

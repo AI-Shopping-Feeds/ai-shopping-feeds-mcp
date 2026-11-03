@@ -40,7 +40,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "prepublishOnly": "npm run typecheck && npm test && npm run build",
-    "tools:update": "node scripts/update-tools.mjs"
+    "tools:update": "node scripts/update-tools.mjs",
+    "plugin:zip": "node scripts/build-plugin-zip.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/client": "^2.4.0",

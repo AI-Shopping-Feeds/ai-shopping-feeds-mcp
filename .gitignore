@@ -1,5 +1,6 @@
 node_modules/
 dist/
+dist-plugin/
 coverage/
 *.log
 .env
