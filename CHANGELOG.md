@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Prepared OpenAI directory metadata for ChatGPT and Codex: corrected the category, set the
+  confirmed publisher and country targeting, and included review cases and release notes.
+- Tightened ZIP checks and clarified AI data handling and the recording/reviewer setup.
+
 - Added a `plugin/` folder for the Claude and ChatGPT directories: it connects the hosted server
   with OAuth and includes a skill. `npm run plugin:zip` builds the ChatGPT upload.
 

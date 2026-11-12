@@ -3,7 +3,10 @@
   "name": "ai-shopping-feeds",
   "version": "0.2.0",
   "description": "Manage ecommerce product feeds in AI Shopping Feeds: import a store or feed, audit and fix products, write rules, optimise titles and descriptions, and publish to Google Merchant Center and Meta.",
-  "author": { "name": "AI Shopping Feeds", "url": "https://aishoppingfeeds.com" },
+  "author": {
+    "name": "Pavegrowth",
+    "url": "https://aishoppingfeeds.com"
+  },
   "license": "Apache-2.0",
   "extensions": {
     "com.openai": {
@@ -11,8 +14,8 @@
         "displayName": "AI Shopping Feeds",
         "shortDescription": "Manage shopping product feeds",
         "longDescription": "Connect your AI Shopping Feeds workspace to work on your product feeds in conversation. Import a store or feed, audit products for missing or weak data, write rules that fix patterns across a catalogue, improve titles and descriptions, classify products, and publish to Google Merchant Center and Meta catalogues. You sign in with your AI Shopping Feeds account and choose the workspace and brands to share. Changes to your data are confirmed before they run.",
-        "developerName": "AI Shopping Feeds",
-        "category": "Business",
+        "developerName": "Pavegrowth",
+        "category": "Business & Operations",
         "capabilities": [],
         "websiteURL": "https://aishoppingfeeds.com",
         "supportURL": "https://aishoppingfeeds.com/contact",
@@ -26,6 +29,66 @@
         "brandColor": "#4F8262",
         "composerIcon": "./assets/logo.png",
         "logo": "./assets/logo.png"
+      },
+      "review": {
+        "prompts": [
+          "Audit my main product feed and list the biggest problems",
+          "Which products are missing a GTIN or brand?",
+          "Write a rule that adds the brand to the start of my titles"
+        ],
+        "test_cases": {
+          "positive": [
+            {
+              "description": "Setup: dedicated reviewer workspace with a sample brand and a feed named Review catalogue. List all accessible brands and feeds, paging if required. Do not write data.",
+              "prompt": "List my brands and feeds.",
+              "tools_triggered": "brands.list, feeds.list",
+              "expected_behavior": "Calls brands.list and feeds.list. Reports names and IDs from the returned records, including Review catalogue when accessible; never invents records or changes data."
+            },
+            {
+              "description": "Setup: Review catalogue contains fewer than 100 products, with at least one blank GTIN and one nonblank GTIN. Reviewer access must include read:feeds and read:products. Compare against the returned catalogue.",
+              "prompt": "Which products in Review catalogue are missing a GTIN?",
+              "tools_triggered": "feeds.list, products.list",
+              "expected_behavior": "Resolves the feed_id from feeds.list; calls products.list with that feed_id and paginates until complete. Reports only products whose returned GTIN is absent or blank, with their returned IDs. Does not claim that valid nonblank GTINs are missing or write changes."
+            },
+            {
+              "description": "Setup: Review catalogue has a saved audit and read:feeds/read:products access. Prepare the audit before the review; this case must not start a new audit.",
+              "prompt": "Show the latest saved audit for Review catalogue. Do not run a new one.",
+              "tools_triggered": "feeds.list, feeds.get_audit",
+              "expected_behavior": "Resolves feed_id via feeds.list and calls feeds.get_audit for that ID. Summarises returned pass/fail counts and sample issues without inventing severities or running feeds.run_audit. If the saved audit is absent, explains that instead of claiming success."
+            },
+            {
+              "description": "Setup: Review catalogue has sample products with brands and titles that do not already begin with the brand. Have read:feeds, read:rules and read:products access. This is an unsaved preview, independent of any earlier conversation.",
+              "prompt": "Preview a rule for Review catalogue that adds each product's brand to the start of its title. Do not save or apply anything.",
+              "tools_triggered": "feeds.list, rules.metadata, rules.preview",
+              "expected_behavior": "Resolves feed_id from feeds.list, reads supported operators/actions/attributes via rules.metadata, and calls rules.preview with feed_id and an unsaved rule built from that metadata. Shows before/after title differences supported by the response. Does not call rules.create, rules.apply or products.update."
+            },
+            {
+              "description": "Setup: authenticated reviewer workspace with read:products and read:feeds access. Uses actual taxonomy search results, without expecting a fixed category ID.",
+              "prompt": "Find the Google product categories matching shoes.",
+              "tools_triggered": "taxonomy.search_google_categories",
+              "expected_behavior": "Calls taxonomy.search_google_categories with q=\"shoes\" (not an unsupported query argument). Reports matching category IDs and paths from the response, or accurately reports no matches. Does not classify or modify catalogue products."
+            }
+          ],
+          "negative": [
+            {
+              "description": "Product-feed-adjacent purchasing request. Explain that the plugin manages catalogue data and cannot order stock or take payment. Do not call any plugin tool or claim an order was placed.",
+              "prompt": "Order 100 pairs of running shoes from my supplier and pay for them."
+            },
+            {
+              "description": "Advertising capability boundary: the plugin can sync product catalogues and read product performance, but cannot create campaigns, bids or budgets. Explain the limit without invoking plugin tools.",
+              "prompt": "Create a Google Ads campaign with a daily budget of $50 and launch it now."
+            },
+            {
+              "description": "Storefront capability boundary: the plugin updates feed data, not Shopify orders. Explain that it cannot refund orders. Do not call plugin tools or claim that a refund was issued.",
+              "prompt": "Refund Shopify order #1001 for me."
+            }
+          ]
+        },
+        "commerce": false
+      },
+      "publication": {
+        "release_notes": "Initial directory package: connect the hosted AI Shopping Feeds server through OAuth and use the included skill to inspect, audit, preview and manage product feeds.",
+        "countries": []
       }
     }
   }

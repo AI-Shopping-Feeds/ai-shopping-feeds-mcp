@@ -53,6 +53,30 @@ describe('directory plugin', () => {
     }
   });
 
+  it('uses a supported public category and declares review/publication metadata', () => {
+    expect([
+      'Business & Operations', 'Communication', 'Creativity', 'Data & Analytics',
+      'Developer Tools', 'Education & Research', 'Entertainment', 'Finance',
+      'Healthcare', 'Other', 'Productivity', 'Scientific Research', 'Security', 'Travel'
+    ]).toContain(listing.category);
+    const { review, publication } = openai.extensions['com.openai'];
+    expect(review.test_cases.positive).toHaveLength(5);
+    expect(review.test_cases.negative).toHaveLength(3);
+    for (const entry of review.test_cases.positive) {
+      for (const key of ['description', 'prompt', 'tools_triggered', 'expected_behavior']) {
+        expect(typeof entry[key]).toBe('string');
+        expect(entry[key].trim().length).toBeGreaterThan(0);
+      }
+    }
+    for (const entry of review.test_cases.negative) {
+      expect(entry.description.trim().length).toBeGreaterThan(0);
+      expect(entry.prompt.trim().length).toBeGreaterThan(0);
+    }
+    expect(review.commerce).toBe(false);
+    expect(publication.countries).toEqual([]);
+    expect(publication.release_notes.trim().length).toBeGreaterThan(0);
+  });
+
   it('does not advertise pricing in the listing', () => {
     const text = [openai.description, listing.shortDescription, listing.longDescription, ...listing.defaultPrompt].join(' ');
     expect(text).not.toMatch(/\b(free|trial|price|pricing|discount|subscription|upgrade|best|official)\b/i);
@@ -68,12 +92,13 @@ describe('directory plugin', () => {
     expect(openaiServer.extensions['com.openai'].auth).toEqual({ type: 'oauth', client: { mode: 'dcr' } });
   });
 
-  it('has a square logo of at least 48px, under the size limit', () => {
+  it('has square PNG icons meeting the listing and composer size limits', () => {
     for (const key of ['logo', 'composerIcon']) {
       const png = readFileSync(join(plugin, listing[key]));
       const [width, height] = [png.readUInt32BE(16), png.readUInt32BE(20)];
       expect(width).toBe(height);
-      expect(width).toBeGreaterThanOrEqual(48);
+      expect(png.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+      expect(width).toBeGreaterThanOrEqual(key === 'logo' ? 256 : 48);
       expect(png.length).toBeLessThan(5 * 1024 * 1024);
     }
   });
@@ -120,6 +145,10 @@ describe('directory plugin', () => {
     const output = execFileSync(process.execPath, [join(root, 'scripts/build-plugin-zip.mjs')], { encoding: 'utf8' }).trim();
     const entries = execFileSync('unzip', ['-Z1', output], { encoding: 'utf8' }).split('\n').filter(Boolean);
     expect(entries).toEqual(expect.arrayContaining(['plugin.json', 'mcp.json', 'skills/ai-shopping-feeds/SKILL.md', 'assets/logo.png']));
-    expect(entries.some((entry) => entry.startsWith('.claude-plugin') || entry === '.mcp.json')).toBe(false);
+    expect(entries.some((entry) => entry.startsWith('.claude-plugin') || entry === '.mcp.json' || entry === '.app.json')).toBe(false);
+    const packaged = JSON.parse(execFileSync('unzip', ['-p', output, 'plugin.json'], { encoding: 'utf8' }));
+    expect(packaged).toEqual(openai);
+    expect(packaged.apps).toBeUndefined();
+    expect(packaged.extensions['com.openai'].apps).toBeUndefined();
   });
 });
