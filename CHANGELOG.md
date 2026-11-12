@@ -4,6 +4,9 @@
 
 - Added a `plugin/` folder for the Claude and ChatGPT directories: it connects the hosted server
   with OAuth and includes a skill. `npm run plugin:zip` builds the ChatGPT upload.
+- Skills, server instructions and tool docs match the hosted server's directory review changes:
+  `confirm` is for changes the person explicitly approved, AI optimisation only suggests, and
+  store keys sent to tools stay in the conversation.
 
 ## 0.2.0
 

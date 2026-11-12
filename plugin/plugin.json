@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "ai-shopping-feeds",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Manage ecommerce product feeds in AI Shopping Feeds: import a store or feed, audit and fix products, write rules, optimise titles and descriptions, and publish to Google Merchant Center and Meta.",
   "author": { "name": "AI Shopping Feeds", "url": "https://aishoppingfeeds.com" },
   "license": "Apache-2.0",

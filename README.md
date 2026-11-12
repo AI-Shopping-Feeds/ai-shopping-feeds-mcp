@@ -62,8 +62,9 @@ appear without updating this package. Your agent only sees the tools your API ke
 
 1. The server gives your agent access to the data the API key can reach. Treat the key like a
    password and give it only the scopes you need.
-1. Tools that change data need `confirm: true`. Your agent should ask you before it sets it. If
-   you want an agent that can only look, start the server with `--read-only`.
+1. Tools that change data need `confirm: true`. Each tool tells your agent to set it only after
+   you have approved that exact change in the chat. If you want an agent that can only look, start
+   the server with `--read-only`.
 1. AI tools, such as `ai_optimize_product`, use your workspace's AI credits, as they do in the
    app. Background removal for creatives is free for a feed's first 50 photos, then uses credits.
 
