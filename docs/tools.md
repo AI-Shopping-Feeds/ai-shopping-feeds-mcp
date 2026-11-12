@@ -2,7 +2,8 @@
 
 The server exposes 103 tools in 13 groups. 49 only read data;
 the other 54 change something and are hidden by `--read-only`. Most tools that change data
-need `confirm: true`, so your agent should ask you first.
+need `confirm: true`, which each tool tells your agent to set only after you have approved that
+exact change in the chat.
 
 Your agent only sees the tools your API key's scopes allow. Names use `_`, so `feeds.list` on the
 REST docs is `feeds_list` here. Use a group name with `--tools` to expose only that group.

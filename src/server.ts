@@ -9,7 +9,8 @@ export const SERVER_INSTRUCTIONS = [
   'Tools for AI Shopping Feeds: product feeds, products, rules, AI optimisation, audits, exports,',
   'shopping channels, performance labels and product ad creatives for one workspace.',
   'Start with brands_list or feeds_list to find ids. Tools that change data need confirm: true;',
-  'ask the person before you set it. docs_search and docs_get explain how the app works.'
+  'set it only after the person has explicitly approved this exact change in the conversation.',
+  'docs_search and docs_get explain how the app works.'
 ].join(' ');
 
 /**
