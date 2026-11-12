@@ -15,7 +15,8 @@ It runs nothing on your computer, installs no packages, and has no hooks or scri
 ## What it sends, and where
 
 Your agent sends the tool requests you ask for, including any product data in them, to
-`app.aishoppingfeeds.com` over HTTPS. It sends data nowhere else. If you link a channel, AI
+`app.aishoppingfeeds.com` over HTTPS. When you request AI optimisation, the service sends the
+relevant product text to its AI provider through Vercel AI Gateway. If you link a channel, AI
 Shopping Feeds publishes your products to the Google or Meta account you linked. See the
 [privacy policy](https://aishoppingfeeds.com/privacy) and [terms](https://aishoppingfeeds.com/terms).
 
