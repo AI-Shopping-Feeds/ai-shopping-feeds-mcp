@@ -1,0 +1,10 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.AI-Shopping-Feeds/ai-shopping-feeds-mcp",
+  "title": "AI Shopping Feeds",
+  "description": "Audit and optimise ecommerce product feeds, then publish to Google Merchant Center and Meta.",
+  "websiteUrl": "https://aishoppingfeeds.com",
+  "repository": { "url": "https://github.com/AI-Shopping-Feeds/ai-shopping-feeds-mcp", "source": "github" },
+  "version": "0.2.1",
+  "remotes": [ { "type": "streamable-http", "url": "https://app.aishoppingfeeds.com/api/v1/mcp" } ]
+}
